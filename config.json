@@ -1,0 +1,40 @@
+{
+    "notifs":[{
+        "_comment":"debug : if -eq 1 only send to UriDebug ---- startup : if -eq 1, send notification on first startup (no DCS.exe running)",
+        "debug":0,
+        "startup":0
+    }],
+    "dcs": [
+        {
+        "ExePath": "'C:\\Path\\to\\DCS World\\bin\\DCS.exe'",
+        "Path": "'C:\\Path\\to\\DCS World\\bin\\'",
+        "server": "255.255.255.255",
+        "port1": 10308,
+        "port2": 10309,
+        "port3": 10310,
+        "_comment":"targetX : name of DCS instance Windows",
+        "target1": "instance1",
+        "target2": "instance2",
+        "target3": "instance3"
+        }
+        ],
+    "webhook": [
+        {
+        "Prod": "https://discordapp.com/api/webhooks/123456789",
+        "Debug": "https://discordapp.com/api/webhooks/987654321",
+        "AvatarName": "Name of the Avatar",
+        "Author": "New-DiscordAuthor -Name 'Name of the bot'",
+        "Green": "https://url.to/green.picture",
+        "Orange": "https://url.to/orange.picture",
+        "Red": "https://url.to/red.picture",
+        "Blue": "https://url.to/blue.picture"
+        }
+        ],
+    "JSON": [
+        {
+        "json1": "'C:\\Users\\Path_to\\Saved Games\\instance1\\Scripts\\Json\\perun_status_data.json'",
+        "json2": "'C:\\Users\\Administrateur\\Saved Games\\instance2\\Scripts\\Json\\perun_status_data.json'",
+        "json3": "'C:\\Users\\Administrateur\\Saved Games\\instance3\\Scripts\\Json\\perun_status_data.json'"
+        }
+    ]
+}

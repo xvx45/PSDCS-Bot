@@ -5,7 +5,7 @@
   Supervision, notifications Discord et actions sur instances DCS World. Necessite PSDicord pour fonctionner
   Créé et testé sur Powershell 5.0 sous Windows 2012 R2
 .NOTES
-  Version:        1.5
+  Version:        2.0
   Author:         xvx45
   Creation Date:  11/05/2020
   Purpose/Change: Réecriture complète
@@ -13,45 +13,32 @@
 
 
 #----------------------------------------------------------[Declarations]----------------------------------------------------------
+$here = $PSScriptRoot
+$conf = (Get-Content "$here\config.json" -Raw -Encoding UTF8 | ConvertFrom-Json)
 
-# If value is other than 0, notification will only be sent to $UriDebug
-$debug = 0
-
-# Send or not startup notification. 1 Will send notification, other values, none
-$SendStarup = 0
-
-# Do Not Touch It
 $itt = 0
-
-# DCS Path variables
-$DCSExePath = "C:\Path\To\DCS\bin\DCS.exe"
-$DCSPath = "C:\Path\To\DCS\bin\"
-
-# DCS Public IP & instances ports
-$ipserver = "1.2.3.4"
-$portI1 = 10308
-$portI2 = 10318
-$portI3 = 10328
-
-# Discord's WebHook var
-$UriProd = 'https://discordapp.com/api/webhooks/yourprodUri'
-$UriDebug = 'https://discordapp.com/api/webhooks/youedebugUri'
-$AvatarName = 'Avatar Name'
-$Author = New-DiscordAuthor -Name $AvatarName
-$AvatarGreen = "https://path/to/avatarGreen.picture"
-$AvatarOrange = "https://path/to/avatarOrange.picture"
-$AvatarRed = "https://path/to/avatarRed.picture"
-$AvatarBlue = "https://path/to/avatarBlue.picture"
-
-# Windows Name of each instance
-$target1 = "DCS.openbeta_server"
-$target2 = "PG"
-$target3 = "wwii"
-
-# JSON localisation
-$Json1 = "C:\Users\XXX\Saved Games\instance 1\Scripts\Json\perun_status_data.json"
-$Json2 = "C:\Users\XXX\Saved Games\instance 1\Scripts\Json\perun_status_data.json"
-$Json3 = "C:\Users\XXX\Saved Games\instance 1\Scripts\Json\perun_status_data.json"
+$debug = $conf.notifs.debug
+$SendStarup = $conf.notifs.startup
+$DCSExePath = $conf.dcs.ExePath
+$DCSPath = $conf.dcs.Path
+$ipserver = $conf.dcs.server
+$portI1 = $conf.dcs.port1
+$portI2 = $conf.dcs.port2
+$portI3 = $conf.dcs.port3
+$UriProd = $conf.webhook.Prod | Out-String
+$UriDebug = $conf.webhook.Debug
+$AvatarName = $conf.webhook.AvatarName
+$Author = Invoke-Expression $conf.webhook.Author
+$AvatarGreen = $conf.webhook.Green
+$AvatarOrange = $conf.webhook.Orange
+$AvatarRed = $conf.webhook.Red
+$AvatarBlue = $conf.webhook.Blue
+$target1 = $conf.dcs.target1
+$target2 = $conf.dcs.target2
+$target3 = $conf.dcs.target3
+$Json1 = $conf.JSON.json1
+$Json2 = $conf.JSON.json2
+$Json3 = $conf.JSON.json3
 
 
 #-----------------------------------------------------------[Fonctions]------------------------------------------------------------
@@ -149,11 +136,11 @@ if(!(Get-Process -Name "DCS")) {
 	}
 	
 # Démarrage des instances DCS
-	Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender" -WorkingDirectory $DCSPath
+	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
 	start-sleep -s 60
-	Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w $target2" -WorkingDirectory $DCSPath
+	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target2"" -WorkingDirectory $DCSPath"
 	start-sleep -s 60
-	Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w $target3" -WorkingDirectory $DCSPath
+	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target3"" -WorkingDirectory $DCSPath"
 	start-sleep -s 60
 
 # Vérification du démarrage des instances et création contenu notif Discord
@@ -192,9 +179,9 @@ if(!(Get-Process -Name "DCS")) {
 	if($sI1 -eq 1 -or $sI2 -eq 1 -or $sI3 -eq 1) {
 		Send "evt" "1"
 	} else {
-		$getI1 = (Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2
-		$getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
-		$getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+		$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+		$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+		$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 		$MissionI1 = $getI1.mission.name
 		$MissionI2 = $getI2.mission.name
 		$MissionI3 = $getI3.mission.name
@@ -225,15 +212,15 @@ while(1) {
 # Test process CAUCASE et reboot si absent
     if (!($ProcessI1.Id)) { 
         $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'Instance introuvable' -Inline $false
-        Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender" -WorkingDirectory $DCSPath
+        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
         $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
         Send "err" "2"
         Start-Sleep 60
         $ProcessI1 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target1 }
-# Test disponibilité CAUCASE après reboot
+# Test disponibilité CAUCASE après reboot = 
         $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
         if ($connectionI1.tcpTestSucceeded -eq "True") {
-			$getI1 = (Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+			$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 			$MissionI1 = $getI1.mission.name
             $Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
 Mission actuelle : $MissionI1" -Inline $false
@@ -251,11 +238,8 @@ Mission actuelle : $MissionI1" -Inline $false
                     $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
                     if ($connectionI1.tcpTestSucceeded -eq "True") {
                         $Co = 1
-                        $getI1Result = $getI1.PSObject.Properties | ForEach-Object {
-							$_.Name
-							$_.Value
-						}
-						$MissionI1 = $getI1Result.name[1]
+                        $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+			            $MissionI1 = $getI1.mission.name
 						$Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
 Mission actuelle : $MissionI1" -Inline $false
                     }
@@ -275,7 +259,7 @@ Mission actuelle : $MissionI1" -Inline $false
 # Test process PG et reboot si absent
     if (!($ProcessI2.Id)) { 
         $Fact = New-DiscordFact -Name 'PG' -Value 'Instance introuvable' -Inline $false
-        Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w PG" -WorkingDirectory $DCSPath
+        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
         $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
         Send "err" "2"
         Start-Sleep 60
@@ -283,7 +267,7 @@ Mission actuelle : $MissionI1" -Inline $false
 # Test disponibilité PG après reboot
         $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
         if ($connectionI2.tcpTestSucceeded -eq "True") {
-			$getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+			$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 			$MissionI2 = $getI2.mission.name
             $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
 Mission actuelle : $MissionI2" -Inline $false
@@ -301,7 +285,7 @@ Mission actuelle : $MissionI2" -Inline $false
                     $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
                     if ($connectionI2.tcpTestSucceeded -eq "True") {
                         $Co = 1
-						$getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+						$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 						$MissionI2 = $getI2.mission.name
                         $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
 Mission actuelle : $MissionI2" -Inline $false
@@ -322,16 +306,16 @@ Mission actuelle : $MissionI2" -Inline $false
 # Test process WWII et reboot si absent
     if (!($ProcessI3.Id)) { 
         $Fact = New-DiscordFact -Name 'WWII' -Value 'Instance introuvable' -Inline $false
-        Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w wwii" -WorkingDirectory $DCSPath
+        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
         $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
-        Send "err" "2"
+        . Send "err" "2"
         Start-Sleep 60
         $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
 		
 # Test disponibilité WWII après reboot
         $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
         if ($connectionI3.tcpTestSucceeded -eq "True") {
-			$getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+			$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 			$MissionI3 = $getI3.mission.name
             $Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
 Mission actuelle : $MissionI3" -Inline $false
@@ -349,7 +333,7 @@ Mission actuelle : $MissionI3" -Inline $false
                     $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
                     if ($connectionI3.tcpTestSucceeded -eq "True") {
                         $Co = 1
-                        $getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+                        $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 						$MissionI3 = $getI3.mission.name
 						$Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
 Mission actuelle : $MissionI3" -Inline $false
@@ -374,7 +358,7 @@ Mission actuelle : $MissionI3" -Inline $false
 		if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
             $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI1.Kill()
-            Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender" -WorkingDirectory $DCSPath
+            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
             $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
             Send "evt" "2"
             Start-Sleep 60
@@ -383,7 +367,7 @@ Mission actuelle : $MissionI3" -Inline $false
             $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
             if ($connectionI1.tcpTestSucceeded -eq "True") 
             {
-				$getI1 = (Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+				$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 				$MissionI1 = $getI1.mission.name
                 $Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
 Mission actuelle : $MissionI1" -Inline $false
@@ -401,7 +385,7 @@ Mission actuelle : $MissionI1" -Inline $false
                         $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
                         if ($connectionI1.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                         	$getI1 = (Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+                         	$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 							$MissionI1 = $getI1.mission.name
 							$Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
 Mission actuelle : $MissionI1" -Inline $false
@@ -427,7 +411,7 @@ Mission actuelle : $MissionI1" -Inline $false
 		if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
             $Fact = New-DiscordFact -Name 'PG' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI2.Kill()
-            Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w PG" -WorkingDirectory $DCSPath
+            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
             $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
             Send "evt" "2"
             Start-Sleep 60
@@ -436,7 +420,7 @@ Mission actuelle : $MissionI1" -Inline $false
             $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI2.tcpTestSucceeded -eq "True") 
             {
-				$getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+				$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 				$MissionI2 = $getI2.mission.name
                 $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
 Mission actuelle : $MissionI2" -Inline $false
@@ -454,7 +438,7 @@ Mission actuelle : $MissionI2" -Inline $false
                         $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
                         if ($connectionI2.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                            $getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+                            $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 							$MissionI2 = $getI2.mission.name
 							$Fact = New-DiscordFact -Name 'PG' -Value "En ligne
 Mission actuelle : $MissionI2" -Inline $false
@@ -480,7 +464,7 @@ Mission actuelle : $MissionI2" -Inline $false
 		if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
             $Fact = New-DiscordFact -Name 'WWII' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI3.Kill()
-            Start-Process -FilePath $DCSExePath -ArgumentList "--server --norender -w wwii" -WorkingDirectory $DCSPath
+            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
             $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
             Send "evt" "2"
             Start-Sleep 60
@@ -488,7 +472,7 @@ Mission actuelle : $MissionI2" -Inline $false
 # Test disponibilité WWII après reboot
             $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI3.tcpTestSucceeded -eq "True") {
-				$getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+				$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 				$MissionI3 = $getI3.mission.name
                 $Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
 Mission actuelle : $MissionI3" -Inline $false
@@ -505,7 +489,7 @@ Mission actuelle : $MissionI3" -Inline $false
                         $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
                         if ($connectionI3.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                            $getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+                            $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 							$MissionI3 = $getI3.mission.name
 							$Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
 Mission actuelle : $MissionI3" -Inline $false
@@ -526,9 +510,9 @@ Mission actuelle : $MissionI3" -Inline $false
 	
 
 # Détéction changement de mission
-    $getI1 = (Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2
-    $getI2 = (Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2
-    $getI3 = (Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2
+    $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+    $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+    $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
     $MissionI1comp = $getI1.mission.name
     $MissionI2comp = $getI2.mission.name
     $MissionI3comp = $getI3.mission.name
@@ -564,4 +548,4 @@ Nouvelle mission : $MissionI3comp" -Inline $false
 # TEMPORISATION BOUCLE
 $itt++
 Start-Sleep 30
-}
+}$Uri
