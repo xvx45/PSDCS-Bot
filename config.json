@@ -2,7 +2,32 @@
     "notifs":[{
         "_comment":"debug : if -eq 1 only send to UriDebug ---- startup : if -eq 1, send notification on first startup (no DCS.exe running)",
         "debug":0,
-        "startup":0
+        "startup":0,
+        "startupI1": "New-DiscordFact -Name 'CAUCASE' -Value 'Demarrage' -Inline $false",
+        "startupI2": "New-DiscordFact -Name 'PG' -Value 'Demarrage' -Inline $false",
+        "startupI3": "New-DiscordFact -Name 'WWII' -Value 'Demarrage' -Inline $false",
+        "longI1": "New-DiscordFact -Name 'CAUCASE' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false",
+        "longI2": "New-DiscordFact -Name 'PG' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false",
+        "longI3": "New-DiscordFact -Name 'WWII' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false",
+        "OnlineI1": "New-DiscordFact -Name 'CAUCASE' -Value \"En ligne
+Mission actuelle : $MissionI1\" -Inline $false",
+        "OnlineI2": "New-DiscordFact -Name 'PG' -Value \"En ligne
+Mission actuelle : $MissionI2\" -Inline $false",
+        "OnlineI3": "New-DiscordFact -Name 'WWII' -Value \"En ligne
+Mission actuelle : $MissionI3\" -Inline $false",
+        "NoI1": "New-DiscordFact -Name 'CAUCASE' -Value 'Instance introuvable' -Inline $false",
+        "NoI2": "New-DiscordFact -Name 'PG' -Value 'Instance introuvable' -Inline $false",
+        "NoI3": "New-DiscordFact -Name 'WWII' -Value 'Instance introuvable' -Inline $false",
+        "HangI1": "New-DiscordFact -Name 'CAUCASE' -Value 'Instance figee, force kill' -Inline $false",
+        "HangI2": "New-DiscordFact -Name 'PG' -Value 'Instance figee, force kill' -Inline $false",
+        "HangI3": "New-DiscordFact -Name 'WWII' -Value 'Instance figee, force kill' -Inline $false",
+        "ChangeI1": "New-DiscordFact -Name 'CAUCASE : Changement de mission' -Value \"Ancienne mission : $MissionI1
+Nouvelle mission : $MissionI1comp\" -Inline $false",
+        "ChangeI2": "New-DiscordFact -Name 'PG : Changement de mission' -Value \"Ancienne mission : $MissionI2
+Nouvelle mission : $MissionI2comp\" -Inline $false",
+        "ChangeI3": "New-DiscordFact -Name 'WWII : Changement de mission' -Value \"Ancienne mission : $MissionI3
+Nouvelle mission : $MissionI3comp\" -Inline $false",
+        "NoI_Reboot": "New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false"
     }],
     "dcs": [
         {
@@ -22,7 +47,10 @@
         {
         "Prod": "https://discordapp.com/api/webhooks/123456789",
         "Debug": "https://discordapp.com/api/webhooks/987654321",
-        "AvatarName": "Name of the Avatar",
+        "AvatarNameGreen": "Le serveur du Fail",
+        "AvatarNameOrange": "Le serveur du Fail en Erreur",
+        "AvatarNameRed": "Le serveur du Fail en PLS",
+        "AvatarNameBlue": "Les Infos du serveur du Fail",
         "Author": "New-DiscordAuthor -Name 'Name of the bot'",
         "Green": "https://url.to/green.picture",
         "Orange": "https://url.to/orange.picture",

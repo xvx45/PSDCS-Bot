@@ -5,7 +5,7 @@
   Supervision, notifications Discord et actions sur instances DCS World. Necessite PSDicord pour fonctionner
   Créé et testé sur Powershell 5.0 sous Windows 2012 R2
 .NOTES
-  Version:        2.0
+  Version:        2.5
   Author:         xvx45
   Creation Date:  11/05/2020
   Purpose/Change: Réecriture complète
@@ -19,6 +19,25 @@ $conf = (Get-Content "$here\config.json" -Raw -Encoding UTF8 | ConvertFrom-Json)
 $itt = 0
 $debug = $conf.notifs.debug
 $SendStarup = $conf.notifs.startup
+$startupI1 = $conf.notifs.startupI1
+$startupI2 = $conf.notifs.startupI2
+$startupI3 = $conf.notifs.startupI3
+$longI1 = $conf.notifs.longI1
+$longI2 = $conf.notifs.longI2
+$longI3 = $conf.notifs.longI3
+$OnlineI1 = $conf.notifs.OnlineI1
+$OnlineI2 = $conf.notifs.OnlineI2
+$OnlineI3 = $conf.notifs.OnlineI3
+$NoI1 = $conf.notifs.NoI1
+$NoI2 = $conf.notifs.NoI2
+$NoI3 = $conf.notifs.NoI3
+$HangI1 = $conf.notifs.HangI1
+$HangI2 = $conf.notifs.HangI2
+$HangI3 = $conf.notifs.HangI3
+$ChangeI1 = $conf.notifs.ChangeI1
+$ChangeI2 = $conf.notifs.ChangeI2
+$ChangeI3 = $conf.notifs.ChangeI3
+$NoI_Reboot = $conf.notifs.NoI_Reboot
 $DCSExePath = $conf.dcs.ExePath
 $DCSPath = $conf.dcs.Path
 $ipserver = $conf.dcs.server
@@ -27,7 +46,10 @@ $portI2 = $conf.dcs.port2
 $portI3 = $conf.dcs.port3
 $UriProd = $conf.webhook.Prod
 $UriDebug = $conf.webhook.Debug
-$AvatarName = $conf.webhook.AvatarName
+$AvatarNameGreen = $conf.webhook.AvatarNameGreen
+$AvatarNameOrange = $conf.webhook.AvatarNameOrange
+$AvatarNameRed = $conf.webhook.AvatarNameRed
+$AvatarNameBlue = $conf.webhook.AvatarNameBlue
 $Author = Invoke-Expression $conf.webhook.Author
 $AvatarGreen = $conf.webhook.Green
 $AvatarOrange = $conf.webhook.Orange
@@ -42,6 +64,90 @@ $Json3 = $conf.JSON.json3
 
 
 #-----------------------------------------------------------[Fonctions]------------------------------------------------------------
+# Fonction composition Facts
+Function Facts($when)
+{
+    switch($when)
+    {
+        "startup" {
+            $script:Fact = Invoke-Expression "$startupI1"
+            $script:Fact2 = Invoke-Expression "$startupI2"
+            $script:Fact3 = Invoke-Expression "$startupI3"
+        }
+        "long" {
+            if($sI1 -eq 1) { $script:Fact = Invoke-Expression "$longI1" }
+            if($sI2 -eq 1) { $script:Fact = Invoke-Expression "$longI2" }
+            if($sI3 -eq 1) { $script:Fact = Invoke-Expression "$longI3" }
+        }
+        "online" {
+            if($case -eq "all")
+            {
+                $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+		        $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+		        $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+		        $script:MissionI1 = $getI1.mission.name
+		        $script:MissionI2 = $getI2.mission.name
+                $script:MissionI3 = $getI3.mission.name
+                $script:Fact = Invoke-Exporession "$OnlineI1"
+                $script:Fact2 = Invoke-Exporession "$OnlineI2"
+                $script:Fact3 = Invoke-Exporession "$OnlineI3"
+            }
+            if($case -eq 1)
+            {
+                $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+                $script:MissionI1 = $getI1.mission.name
+                $script:Fact = Invoke-Exporession "$OnlineI1"
+            }
+            if($case -eq 2)
+            {
+                $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+                $script:MissionI2 = $getI2.mission.name
+                $script:Fact = Invoke-Exporession "$OnlineI2"
+            }
+            if($case -eq 3)
+            {
+                $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+                $script:MissionI3 = $getI3.mission.name
+                $script:Fact = Invoke-Expression "$OnlineI3"
+            }
+        }
+        "NoI1" {
+            $script:Fact = Invoke-Expression "$NoI1"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "NoI2" {
+            $script:Fact = Invoke-Expression "$NoI2"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "NoI3" {
+            $script:Fact = Invoke-Expression "$NoI3"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "HangI1" {
+            $script:Fact = Invoke-Expression "$HangI1"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "HangI2" {
+            $script:Fact = Invoke-Expression "$HangI2"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "HangI3" {
+            $script:Fact = Invoke-Expression "$HangI3"
+            $script:Fact2 = Invoke-Expression "$NoI_Reboot"
+        }
+        "ChangeI1" {
+            $script:Fact = Invoke-Expression "$ChangeI1"
+        }
+        "ChangeI2" {
+            $script:Fact = Invoke-Expression "$ChangeI2"
+        }
+        "ChangeI3" {
+            $script:Fact = Invoke-Expression "$ChangeI3"
+        }
+    }
+}
+
+
 # Fonction d'envoi
 Function Send($title, $nFacts)
 {
@@ -81,41 +187,41 @@ Function Send($title, $nFacts)
 		"Green" {
 			if(!($debug -eq 1)) {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarGreen
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarGreen
+				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarNameGreen -AvatarUrl $AvatarGreen
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameGreen -AvatarUrl $AvatarGreen
 			} else {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarGreen
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameGreen -AvatarUrl $AvatarGreen
 			}
 		}
 		"Orange" {
 			if(!($debug -eq 1)) {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarOrange
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarOrange
+				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarNameOrange -AvatarUrl $AvatarOrange
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameOrange -AvatarUrl $AvatarOrange
 			} else {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarOrange
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameOrange -AvatarUrl $AvatarOrange
 			}
 		}
 		"Red" {
 			if(!($debug -eq 1)) {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarRed
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarRed
+				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarNameRed -AvatarUrl $AvatarRed
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameRed -AvatarUrl $AvatarRed
 			} else {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarRed
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameRed -AvatarUrl $AvatarRed
 			}
 		}
 		"Blue" {
 			if(!($debug -eq 1)) {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author	
-				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarBlue
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarBlue
+				Send-DiscordMessage -WebHookUrl $UriProd -Sections $Section -AvatarName $AvatarNameBlue -AvatarUrl $AvatarBlue
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameBlue -AvatarUrl $AvatarBlue
 			} else {
 				$Section = New-DiscordSection -Title $Se -Description '' -Facts $ct -Color $color -Author $Author	
-				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarName -AvatarUrl $AvatarBlue
+				Send-DiscordMessage -WebHookUrl $UriDebug -Sections $Section -AvatarName $AvatarNameBlue -AvatarUrl $AvatarBlue
 			}
 		}		
 	}
@@ -129,9 +235,7 @@ if(!(Get-Process -Name "DCS")) {
 
 	if($SendStarup -eq 1) {
 # Envoi notif Discord
-		$Fact = New-DiscordFact -Name 'CAUCASE' -Value 'Demarrage' -Inline $false
-		$Fact2 = New-DiscordFact -Name 'PG' -Value 'Demarrage' -Inline $false
-		$Fact3 = New-DiscordFact -Name 'WWII' -Value 'Demarrage' -Inline $false
+        Facts "startup"
 		Send "inf" "3"
 	}
 	
@@ -152,8 +256,9 @@ if(!(Get-Process -Name "DCS")) {
 		Start-Sleep 30
 		$connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
 		if (!($connectionI1.tcpTestSucceeded -eq "True")) {
-			$Fact = New-DiscordFact -Name 'CAUCASE' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false
-			$sI1 = 1
+            $sI1 = 1
+            Facts "long"
+            $sI1 = $null
 		}
 	}
 	$connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
@@ -161,8 +266,9 @@ if(!(Get-Process -Name "DCS")) {
 		Start-Sleep 30
 		$connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
 		if (!($connectionI2.tcpTestSucceeded -eq "True")) {
-			$Fact2 = New-DiscordFact -Name 'PG' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false
-			$sI2 = 1
+            $sI2 = 1
+            Facts "long"
+            $sI2 = $null
 		}
 	}
 	$connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
@@ -170,8 +276,9 @@ if(!(Get-Process -Name "DCS")) {
 		Start-Sleep 30
 		$connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
 		if (!($connectionI3.tcpTestSucceeded -eq "True")) {
-			$Fact3 = New-DiscordFact -Name 'WWII' -Value 'L''instance reste hors-ligne depuis plusieurs minutes' -Inline $false
-			$sI3 = 1
+            $sI3 = 1
+            Facts "long"
+            $sI3 = $null
 		}
 	}
 	
@@ -179,22 +286,20 @@ if(!(Get-Process -Name "DCS")) {
 	if($sI1 -eq 1 -or $sI2 -eq 1 -or $sI3 -eq 1) {
 		Send "evt" "1"
 	} else {
-		$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-		$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-		$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-		$MissionI1 = $getI1.mission.name
-		$MissionI2 = $getI2.mission.name
-		$MissionI3 = $getI3.mission.name
-		$Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
-Mission actuelle : $MissionI1" -Inline $false
-		$Fact2 = New-DiscordFact -Name 'PG' -Value "En ligne
-Mission actuelle : $MissionI2" -Inline $false
-		$Fact3 = New-DiscordFact -Name 'WWII' -Value "En ligne
-Mission actuelle : $MissionI3" -Inline $false
-		Send "up" "3"
+        $case = "all"
+        Facts "online"
+        Send "up" "3"
+        $case = $null
 	}
 }
 
+
+$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+$MissionI1 = $getI1.mission.name
+$MissionI2 = $getI2.mission.name
+$MissionI3 = $getI3.mission.name
 
 # TESTS DES INSTANCES
 while(1) {
@@ -211,19 +316,17 @@ while(1) {
 
 # Test process CAUCASE et reboot si absent
     if (!($ProcessI1.Id)) { 
-        $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'Instance introuvable' -Inline $false
         Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
-        $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
+        Facts "NoI1"
         Send "err" "2"
         Start-Sleep 60
         $ProcessI1 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target1 }
-# Test disponibilité CAUCASE après reboot = 
+# Test disponibilité CAUCASE après reboot
         $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
         if ($connectionI1.tcpTestSucceeded -eq "True") {
-			$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-			$MissionI1 = $getI1.mission.name
-            $Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
-Mission actuelle : $MissionI1" -Inline $false
+            $case = 1
+            Facts "online"
+            $case = $null
         }
         else {
             $Co = 0
@@ -231,17 +334,18 @@ Mission actuelle : $MissionI1" -Inline $false
             While($Co -eq 0)
                 {
                 if($tent -eq 10) {
-                    $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'L''instance est toujours hors ligne apres 2mn un probleme arrive' -Inline $false
+                    $sI1 = 1
+                    Facts "long"
+                    $sI1 = $null
                     break
                 }
                 else {
                     $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
                     if ($connectionI1.tcpTestSucceeded -eq "True") {
                         $Co = 1
-                        $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-			            $MissionI1 = $getI1.mission.name
-						$Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
-Mission actuelle : $MissionI1" -Inline $false
+                        $case = 1
+                        Facts "online"
+                        $case = $null
                     }
                     else {
                         Start-Sleep 5
@@ -258,19 +362,17 @@ Mission actuelle : $MissionI1" -Inline $false
 	
 # Test process PG et reboot si absent
     if (!($ProcessI2.Id)) { 
-        $Fact = New-DiscordFact -Name 'PG' -Value 'Instance introuvable' -Inline $false
         Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
-        $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
+        Facts "NoI2"
         Send "err" "2"
         Start-Sleep 60
         $ProcessI2 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target2 }
 # Test disponibilité PG après reboot
         $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
         if ($connectionI2.tcpTestSucceeded -eq "True") {
-			$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-			$MissionI2 = $getI2.mission.name
-            $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
-Mission actuelle : $MissionI2" -Inline $false
+            $case = 2
+            Facts "online"
+            $case = $null
         }
         else {
             $Co = 0
@@ -278,17 +380,18 @@ Mission actuelle : $MissionI2" -Inline $false
             While($Co -eq 0)
                 {
                 if($tent -eq 10) {
-                    $Fact = New-DiscordFact -Name 'PG' -Value 'L''instance est toujours hors ligne apres 2mn un probleme arrive' -Inline $false
+                    $sI2 = 1
+                    Facts "long"
+                    $sI2 = $null
                     break
                 }
                 else {
                     $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
                     if ($connectionI2.tcpTestSucceeded -eq "True") {
                         $Co = 1
-						$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-						$MissionI2 = $getI2.mission.name
-                        $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
-Mission actuelle : $MissionI2" -Inline $false
+						$case = 2
+                        Facts "online"
+                        $case = $null
                     }
                     else {
                         Start-Sleep 5
@@ -305,20 +408,18 @@ Mission actuelle : $MissionI2" -Inline $false
 
 # Test process WWII et reboot si absent
     if (!($ProcessI3.Id)) { 
-        $Fact = New-DiscordFact -Name 'WWII' -Value 'Instance introuvable' -Inline $false
         Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
-        $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
-        . Send "err" "2"
+        Facts "NoI3"
+        Send "err" "2"
         Start-Sleep 60
         $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
 		
 # Test disponibilité WWII après reboot
         $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
         if ($connectionI3.tcpTestSucceeded -eq "True") {
-			$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-			$MissionI3 = $getI3.mission.name
-            $Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
-Mission actuelle : $MissionI3" -Inline $false
+			$case = 3
+            Facts "online"
+            $case = $null
         }
         else {
             $Co = 0
@@ -326,17 +427,18 @@ Mission actuelle : $MissionI3" -Inline $false
             While($Co -eq 0)
                 {
                 if($tent -eq 10) {
-                    $Fact = New-DiscordFact -Name 'WWII' -Value 'L''instance est toujours hors ligne apres 2mn un probleme arrive' -Inline $false
+                    $sI3 = 1
+                    Facts "long"
+                    $sI3 = $null
                     break
                 }
                 else {
                     $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
                     if ($connectionI3.tcpTestSucceeded -eq "True") {
                         $Co = 1
-                        $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-						$MissionI3 = $getI3.mission.name
-						$Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
-Mission actuelle : $MissionI3" -Inline $false
+                        $case = 3
+                        Facts "online"
+                        $case = $null
                     }
                     else {
                         Start-Sleep 5
@@ -356,10 +458,9 @@ Mission actuelle : $MissionI3" -Inline $false
     if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
 		Start-Sleep 30
 		if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
-            $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI1.Kill()
             Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
-            $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
+            Facts "HangI1"
             Send "evt" "2"
             Start-Sleep 60
 			
@@ -367,10 +468,9 @@ Mission actuelle : $MissionI3" -Inline $false
             $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
             if ($connectionI1.tcpTestSucceeded -eq "True") 
             {
-				$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-				$MissionI1 = $getI1.mission.name
-                $Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
-Mission actuelle : $MissionI1" -Inline $false
+                $case = 1
+                Facts "online"
+                $case = $null
             }
             else {
                 $Co = 0
@@ -378,17 +478,18 @@ Mission actuelle : $MissionI1" -Inline $false
                 While($Co -eq 0)
                 {
                     if($tent -eq 10) {
-                        $Fact = New-DiscordFact -Name 'CAUCASE' -Value 'L''instance est toujours hors ligne apres 2mn un probleme est arrive' -Inline $false
+                        $sI1 = 1
+                        Facts "long"
+                        $sI1 = $null
                         break
                     }
                     else {
                         $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
                         if ($connectionI1.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                         	$getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-							$MissionI1 = $getI1.mission.name
-							$Fact = New-DiscordFact -Name 'CAUCASE' -Value "En ligne
-Mission actuelle : $MissionI1" -Inline $false
+                            $case = 1
+                            Facts "online"
+                            $case = $null
                         }
                         else {
                             Start-Sleep 5
@@ -409,10 +510,9 @@ Mission actuelle : $MissionI1" -Inline $false
     if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
 		Start-Sleep 30
 		if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
-            $Fact = New-DiscordFact -Name 'PG' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI2.Kill()
             Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
-            $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
+            Facts "HangI2"
             Send "evt" "2"
             Start-Sleep 60
 			
@@ -420,10 +520,9 @@ Mission actuelle : $MissionI1" -Inline $false
             $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI2.tcpTestSucceeded -eq "True") 
             {
-				$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-				$MissionI2 = $getI2.mission.name
-                $Fact = New-DiscordFact -Name 'PG' -Value "En ligne
-Mission actuelle : $MissionI2" -Inline $false
+				$case = 2
+                Facts "online"
+                $case = $null
             }
             else {
                 $Co = 0
@@ -431,17 +530,18 @@ Mission actuelle : $MissionI2" -Inline $false
                 While($Co -eq 0)
                 {
                     if($tent -eq 10) {
-                        $Fact = New-DiscordFact -Name 'PG' -Value 'L''instance est toujours hors ligne apres 2mn un probleme arrive' -Inline $false
+                        $sI2 = 1
+                        Facts "long"
+                        $sI2 = $null
                         break
                     }
                     else {
                         $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
                         if ($connectionI2.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                            $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-							$MissionI2 = $getI2.mission.name
-							$Fact = New-DiscordFact -Name 'PG' -Value "En ligne
-Mission actuelle : $MissionI2" -Inline $false
+                            $case = 2
+                            Facts "online"
+                            $case = $null
                         }
                         else {
                             Start-Sleep 5
@@ -462,37 +562,36 @@ Mission actuelle : $MissionI2" -Inline $false
     if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
 		Start-Sleep 30
 		if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
-            $Fact = New-DiscordFact -Name 'WWII' -Value 'Instance figee, force kill' -Inline $false
             $ProcessI3.Kill()
             Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
-            $Fact2 = New-DiscordFact -Name 'reboot' -Value 'Redemarrage de l''instance' -Inline $false
+            Facts "HangI3"
             Send "evt" "2"
             Start-Sleep 60
 			
 # Test disponibilité WWII après reboot
             $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI3.tcpTestSucceeded -eq "True") {
-				$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-				$MissionI3 = $getI3.mission.name
-                $Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
-Mission actuelle : $MissionI3" -Inline $false
+				$case = 3
+                Facts "online"
+                $case = $null
             } else {
                 $Co = 0
                 $tent = 0
                 While($Co -eq 0)
                 {
                     if($tent -eq 10) {
-                        $Fact = New-DiscordFact -Name 'WWII' -Value 'L''instance est toujours hors ligne apres 2mn un probleme arrive' -Inline $false
+                        $sI3 = 1
+                        Facts "long"
+                        $sI3 = $null
                         break
                     }
                     else {
                         $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
                         if ($connectionI3.tcpTestSucceeded -eq "True") {
                             $Co = 1
-                            $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-							$MissionI3 = $getI3.mission.name
-							$Fact = New-DiscordFact -Name 'WWII' -Value "En ligne
-Mission actuelle : $MissionI3" -Inline $false
+                            $case = 3
+                            Facts "online"
+                            $case = $null
                         }
                         else {
                             Start-Sleep 5
@@ -520,22 +619,19 @@ Mission actuelle : $MissionI3" -Inline $false
     {
         if(!($MissionI1comp -eq $MissionI1))
         {
-            $Fact = New-DiscordFact -Name 'CAUCASE : Changement de mission' -Value "Ancienne mission : $MissionI1
-Nouvelle mission : $MissionI1comp" -Inline $false
+            Facts "ChangeI1"
             Send "inf" "1"
             $MissionI1 = $MissionI1comp
         }
         if(!($MissionI2comp -eq $MissionI2))
         {
-            $Fact = New-DiscordFact -Name 'PG : Changement de mission' -Value "Ancienne mission : $MissionI2
-Nouvelle mission : $MissionI2comp" -Inline $false
+            Facts "ChangeI2"
             Send "inf" "1"
             $MissionI2 = $MissionI2comp
         }
         if(!($MissionI3comp -eq $MissionI3))
         {
-            $Fact = New-DiscordFact -Name 'WWII : Changement de mission' -Value "Ancienne mission : $MissionI3
-Nouvelle mission : $MissionI3comp" -Inline $false
+            Facts "ChangeI3"
             Send "inf" "1"
             $MissionI3 = $MissionI3comp
         }
@@ -548,4 +644,4 @@ Nouvelle mission : $MissionI3comp" -Inline $false
 # TEMPORISATION BOUCLE
 $itt++
 Start-Sleep 30
-}$Uri
+}
