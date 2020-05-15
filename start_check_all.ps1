@@ -232,13 +232,11 @@ Function Send($title, $nFacts)
 ## DEMARRAGE DES INSTANCES
 # Si aucun process DCS détécté
 if(!(Get-Process -Name "DCS")) {
-
 	if($SendStarup -eq 1) {
 # Envoi notif Discord
         Facts "startup"
 		Send "inf" "3"
 	}
-	
 # Démarrage des instances DCS
 	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
 	start-sleep -s 60
@@ -246,7 +244,6 @@ if(!(Get-Process -Name "DCS")) {
 	start-sleep -s 60
 	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target3"" -WorkingDirectory $DCSPath"
 	start-sleep -s 60
-
 # Vérification du démarrage des instances et création contenu notif Discord
 	$sI1 = 0
 	$sI2 = 0
@@ -281,7 +278,6 @@ if(!(Get-Process -Name "DCS")) {
             $sI3 = $null
 		}
 	}
-	
 # Composition et envoi notif Discord
 	if($sI1 -eq 1 -or $sI2 -eq 1 -or $sI3 -eq 1) {
 		Send "evt" "1"
@@ -292,8 +288,6 @@ if(!(Get-Process -Name "DCS")) {
         $case = $null
 	}
 }
-
-
 $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
@@ -312,7 +306,6 @@ while(1) {
     $ProcessI1.ProcessorAffinity=9
     $ProcessI2.ProcessorAffinity=2
     $ProcessI3.ProcessorAffinity=4
-
 
 # Test process CAUCASE et reboot si absent
     if (!($ProcessI1.Id)) { 
@@ -358,7 +351,6 @@ while(1) {
 # Envoi notif Discord
         Send "up" "1"
     }
-
 	
 # Test process PG et reboot si absent
     if (!($ProcessI2.Id)) { 
@@ -405,7 +397,6 @@ while(1) {
         Send "up" "1"
     }
 
-
 # Test process WWII et reboot si absent
     if (!($ProcessI3.Id)) { 
         Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
@@ -413,7 +404,6 @@ while(1) {
         Send "err" "2"
         Start-Sleep 60
         $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
-		
 # Test disponibilité WWII après reboot
         $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
         if ($connectionI3.tcpTestSucceeded -eq "True") {
@@ -448,12 +438,10 @@ while(1) {
                 }
             }
         }
-		
 # Envoi notif Discord
         Send "up" "1"
     }
 	
-
 # Test Ne Répond Pas et recheck après 30s et reboot
     if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
 		Start-Sleep 30
@@ -463,7 +451,6 @@ while(1) {
             Facts "HangI1"
             Send "evt" "2"
             Start-Sleep 60
-			
 # Test disponibilité CAUCASE après reboot
             $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
             if ($connectionI1.tcpTestSucceeded -eq "True") 
@@ -499,7 +486,6 @@ while(1) {
                     }
                 }
             }
-			
 # Envoi notif Discord
 			Send "up" "1"
 		}
@@ -515,7 +501,6 @@ while(1) {
             Facts "HangI2"
             Send "evt" "2"
             Start-Sleep 60
-			
 # Test disponibilité PG après reboot
             $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI2.tcpTestSucceeded -eq "True") 
@@ -551,12 +536,10 @@ while(1) {
                     }
                 }
             }
-			
 # Envoi notif Discord
         Send "up" "1"
 		}
 	}
-	
 
 # Test Ne Répond Pas, recheck après 30s et reboot
     if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
@@ -567,7 +550,6 @@ while(1) {
             Facts "HangI3"
             Send "evt" "2"
             Start-Sleep 60
-			
 # Test disponibilité WWII après reboot
             $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
             if ($connectionI3.tcpTestSucceeded -eq "True") {
@@ -601,12 +583,10 @@ while(1) {
                     }
                 }
             }
-			
 # Envoi notif Discord
         Send "up" "1"
 		}
 	}
-	
 
 # Détéction changement de mission
     $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
