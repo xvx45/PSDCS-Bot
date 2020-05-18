@@ -1,6 +1,6 @@
 # PSDCS_Bot
 
-## DPSDCS_Botescription
+## Description
 Petit script Powershell pour automatiser sur DCS World :
 * Lancement des instances
 * Vérification régulière de :
@@ -26,9 +26,9 @@ Uniquement testé et utilisé sous Windows Server 2012 Std# PSDCS_Bot
 Petit script Powershell pour automatiser sur DCS World :
 * Lancement des instances
 * Vérification régulière de :
-** Crash de l'instance
-** Hang de l'instance
-** Changement de mission
+  * Crash de l'instance
+  * Hang de l'instance
+  * Changement de mission
 * Notifications Discord des événements. 
 Un crash ou un Hang amène au redémarrage de l'instance concernée. 
 
