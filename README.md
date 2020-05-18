@@ -6,7 +6,7 @@ Petit script Powershell pour automatiser sur DCS World :
 * Vérification régulière de :
   * Crash de l'instance
   * Hang de l'instance
-  * Changement de mission
+  * Changements de mission
 * Notifications Discord des événements. 
 Un crash ou un Hang amène au redémarrage de l'instance concernée. 
 
