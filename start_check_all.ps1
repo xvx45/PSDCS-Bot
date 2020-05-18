@@ -1,14 +1,11 @@
 <#
 .SYNOPSIS
   Supervision, notifications et actions sur instances DCS World
-.DESCRIPTION
-  Supervision, notifications Discord et actions sur instances DCS World. Necessite PSDicord pour fonctionner
-  Créé et testé sur Powershell 5.0 sous Windows 2012 R2
 .NOTES
-  Version:        2.5
+  Version:        3.0
   Author:         xvx45
   Creation Date:  11/05/2020
-  Purpose/Change: Réecriture complète
+  Purpose/Change: By Instances
 #>
 
 
@@ -17,6 +14,7 @@ $here = $PSScriptRoot
 $conf = (Get-Content "$here\config.json" -Raw -Encoding UTF8 | ConvertFrom-Json)
 
 $itt = 0
+$instances = $conf.notifs.instances
 $debug = $conf.notifs.debug
 $SendStarup = $conf.notifs.startup
 $startupI1 = $conf.notifs.startupI1
@@ -88,21 +86,21 @@ Function Facts($when)
 		        $script:MissionI1 = $getI1.mission.name
 		        $script:MissionI2 = $getI2.mission.name
                 $script:MissionI3 = $getI3.mission.name
-                $script:Fact = Invoke-Exporession "$OnlineI1"
-                $script:Fact2 = Invoke-Exporession "$OnlineI2"
-                $script:Fact3 = Invoke-Exporession "$OnlineI3"
+                $script:Fact = Invoke-Expression "$OnlineI1"
+                $script:Fact2 = Invoke-Expression "$OnlineI2"
+                $script:Fact3 = Invoke-Expression "$OnlineI3"
             }
             if($case -eq 1)
             {
                 $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
                 $script:MissionI1 = $getI1.mission.name
-                $script:Fact = Invoke-Exporession "$OnlineI1"
+                $script:Fact = Invoke-Expression "$OnlineI1"
             }
             if($case -eq 2)
             {
                 $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
                 $script:MissionI2 = $getI2.mission.name
-                $script:Fact = Invoke-Exporession "$OnlineI2"
+                $script:Fact = Invoke-Expression "$OnlineI2"
             }
             if($case -eq 3)
             {
@@ -232,18 +230,29 @@ Function Send($title, $nFacts)
 ## DEMARRAGE DES INSTANCES
 # Si aucun process DCS détécté
 if(!(Get-Process -Name "DCS")) {
+
 	if($SendStarup -eq 1) {
 # Envoi notif Discord
         Facts "startup"
-		Send "inf" "3"
+        if($instances -eq '1') { Send "inf" "1" }
+        if($instances -eq '2') { Send "inf" "2" }
+        if($instances -eq '3') { Send "inf" "3" }
 	}
+	
 # Démarrage des instances DCS
 	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
-	start-sleep -s 60
-	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target2"" -WorkingDirectory $DCSPath"
-	start-sleep -s 60
-	Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target3"" -WorkingDirectory $DCSPath"
-	start-sleep -s 60
+    start-sleep -s 60
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target2"" -WorkingDirectory $DCSPath"
+        start-sleep -s 60
+    }
+    if($instances -eq '3')
+    {
+	    Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w $target3"" -WorkingDirectory $DCSPath"
+        start-sleep -s 60
+    }
+
 # Vérification du démarrage des instances et création contenu notif Discord
 	$sI1 = 0
 	$sI2 = 0
@@ -257,64 +266,94 @@ if(!(Get-Process -Name "DCS")) {
             Facts "long"
             $sI1 = $null
 		}
-	}
-	$connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-	if (!($connectionI2.tcpTestSucceeded -eq "True")) {
-		Start-Sleep 30
-		$connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-		if (!($connectionI2.tcpTestSucceeded -eq "True")) {
-            $sI2 = 1
-            Facts "long"
-            $sI2 = $null
-		}
-	}
-	$connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
-	if (!($connectionI3.tcpTestSucceeded -eq "True")) {
-		Start-Sleep 30
-		$connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
-		if (!($connectionI3.tcpTestSucceeded -eq "True")) {
-            $sI3 = 1
-            Facts "long"
-            $sI3 = $null
-		}
-	}
+    }
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+	    $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+	    if (!($connectionI2.tcpTestSucceeded -eq "True")) {
+	    	Start-Sleep 30
+	    	$connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+	    	if (!($connectionI2.tcpTestSucceeded -eq "True")) {
+                $sI2 = 1
+                Facts "long"
+                $sI2 = $null
+		    }
+        }
+    }
+    if($instances -eq '3')
+    {
+	    $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
+	    if (!($connectionI3.tcpTestSucceeded -eq "True")) {
+	    	Start-Sleep 30
+	    	$connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
+	    	if (!($connectionI3.tcpTestSucceeded -eq "True")) {
+                $sI3 = 1
+                Facts "long"
+                $sI3 = $null
+	    	}
+        }
+    }
+	
 # Composition et envoi notif Discord
 	if($sI1 -eq 1 -or $sI2 -eq 1 -or $sI3 -eq 1) {
 		Send "evt" "1"
 	} else {
         $case = "all"
         Facts "online"
-        Send "up" "3"
+        if($instances -eq '1') { Send "up" "2" }
+        if($instances -eq '2') { Send "up" "2" }
+        if($instances -eq '3') { Send "up" "3" }
         $case = $null
 	}
 }
+
+# Recuperation des noms de missions
 $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-$getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-$getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
 $MissionI1 = $getI1.mission.name
-$MissionI2 = $getI2.mission.name
-$MissionI3 = $getI3.mission.name
+if($instances -eq '2' -or $instances -eq '3')
+{
+    $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+    $MissionI2 = $getI2.mission.name
+}
+if($instances -eq '3')
+{
+    $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+    $MissionI3 = $getI3.mission.name
+}
 
 # TESTS DES INSTANCES
 while(1) {
-
-#Definition des process
+#Definition des process et des CPU par process
     $ProcessI1 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target1 }
-    $ProcessI2 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target2 }
-    $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
-#Definition des CPU par process
-    $ProcessI1.ProcessorAffinity=9
-    $ProcessI2.ProcessorAffinity=2
-    $ProcessI3.ProcessorAffinity=4
+    if($ProcessI1.ProcessorAffinity)
+    {
+        $ProcessI1.ProcessorAffinity=9
+    }
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+        $ProcessI2 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target2 }
+        if($ProcessI2.ProcessorAffinity)
+        {
+            $ProcessI2.ProcessorAffinity=2
+        }
+    }
+    if($instances -eq '3')
+    {
+        $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
+        if($ProcessI3.ProcessorAffinity)
+        {
+            $ProcessI3.ProcessorAffinity=4
+        }
+    }
 
-# Test process CAUCASE et reboot si absent
+# Test process INSTANCE 1 et reboot si absent
     if (!($ProcessI1.Id)) { 
         Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
         Facts "NoI1"
         Send "err" "2"
         Start-Sleep 60
         $ProcessI1 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target1 }
-# Test disponibilité CAUCASE après reboot
+# Test disponibilité INSTANCE 1 après reboot
         $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
         if ($connectionI1.tcpTestSucceeded -eq "True") {
             $case = 1
@@ -351,98 +390,104 @@ while(1) {
 # Envoi notif Discord
         Send "up" "1"
     }
-	
-# Test process PG et reboot si absent
-    if (!($ProcessI2.Id)) { 
-        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
-        Facts "NoI2"
-        Send "err" "2"
-        Start-Sleep 60
-        $ProcessI2 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target2 }
-# Test disponibilité PG après reboot
-        $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-        if ($connectionI2.tcpTestSucceeded -eq "True") {
-            $case = 2
-            Facts "online"
-            $case = $null
-        }
-        else {
-            $Co = 0
-            $tent = 0
-            While($Co -eq 0)
-                {
-                if($tent -eq 10) {
-                    $sI2 = 1
-                    Facts "long"
-                    $sI2 = $null
-                    break
-                }
-                else {
-                    $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-                    if ($connectionI2.tcpTestSucceeded -eq "True") {
-                        $Co = 1
-						$case = 2
-                        Facts "online"
-                        $case = $null
+
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+# Test process INSTANCE2 et reboot si absent
+        if (!($ProcessI2.Id)) { 
+            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
+            Facts "NoI2"
+            Send "err" "2"
+            Start-Sleep 60
+            $ProcessI2 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target2 }
+# Test disponibilité INSTANCE2 après reboot
+            $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+            if ($connectionI2.tcpTestSucceeded -eq "True") {
+                $case = 2
+                Facts "online"
+                $case = $null
+            }
+            else {
+                $Co = 0
+                $tent = 0
+                While($Co -eq 0)
+                    {
+                    if($tent -eq 10) {
+                        $sI2 = 1
+                        Facts "long"
+                        $sI2 = $null
+                        break
                     }
                     else {
-                        Start-Sleep 5
-                        $Co = 0
-                        $tent++
+                        $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+                        if ($connectionI2.tcpTestSucceeded -eq "True") {
+                            $Co = 1
+						    $case = 2
+                            Facts "online"
+                            $case = $null
+                        }
+                        else {
+                            Start-Sleep 5
+                            $Co = 0
+                            $tent++
+                        }
                     }
                 }
             }
-        }
 # Envoi notif Discord
-        Send "up" "1"
+            Send "up" "1"
+        }
     }
 
-# Test process WWII et reboot si absent
-    if (!($ProcessI3.Id)) { 
-        Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
-        Facts "NoI3"
-        Send "err" "2"
-        Start-Sleep 60
-        $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }
-# Test disponibilité WWII après reboot
-        $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-        if ($connectionI3.tcpTestSucceeded -eq "True") {
-			$case = 3
-            Facts "online"
-            $case = $null
-        }
-        else {
-            $Co = 0
-            $tent = 0
-            While($Co -eq 0)
-                {
-                if($tent -eq 10) {
-                    $sI3 = 1
-                    Facts "long"
-                    $sI3 = $null
-                    break
-                }
-                else {
-                    $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
-                    if ($connectionI3.tcpTestSucceeded -eq "True") {
-                        $Co = 1
-                        $case = 3
-                        Facts "online"
-                        $case = $null
+    if($instances -eq '3')
+    {
+# Test process INSTANCE3 et reboot si absent
+        if (!($ProcessI3.Id)) { 
+            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
+            Facts "NoI3"
+            Send "err" "2"
+            Start-Sleep 60
+            $ProcessI3 = Get-Process | Where-Object { $_.MainWindowTitle -eq $target3 }	
+# Test disponibilité INSTANCE3 après reboot
+            $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+            if ($connectionI3.tcpTestSucceeded -eq "True") {
+    			$case = 3
+                Facts "online"
+                $case = $null
+            }
+            else {
+                $Co = 0
+                $tent = 0
+                While($Co -eq 0)
+                    {
+                    if($tent -eq 10) {
+                        $sI3 = 1
+                        Facts "long"
+                        $sI3 = $null
+                        break
                     }
                     else {
-                        Start-Sleep 5
-                        $Co = 0
-                        $tent++
+                        $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
+                        if ($connectionI3.tcpTestSucceeded -eq "True") {
+                            $Co = 1
+                            $case = 3
+                            Facts "online"
+                            $case = $null
+                        }
+                        else {
+                            Start-Sleep 5
+                            $Co = 0
+                            $tent++
+                        }
                     }
                 }
             }
-        }
 # Envoi notif Discord
-        Send "up" "1"
+            Send "up" "1"
+        }
     }
-	
-# Test Ne Répond Pas et recheck après 30s et reboot
+
+# Test Ne Répond Pas INSTANCE1 et recheck après 30s et reboot
     if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
 		Start-Sleep 30
 		if( -not ($ProcessI1.MainWindowHandle -and $ProcessI1.Responding)) {
@@ -450,8 +495,8 @@ while(1) {
             Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender"" -WorkingDirectory $DCSPath"
             Facts "HangI1"
             Send "evt" "2"
-            Start-Sleep 60
-# Test disponibilité CAUCASE après reboot
+            Start-Sleep 60	
+# Test disponibilité INSTANCE1 après reboot
             $connectionI1 = Test-NetConnection -ComputerName $ipserver -Port $portI1
             if ($connectionI1.tcpTestSucceeded -eq "True") 
             {
@@ -485,116 +530,128 @@ while(1) {
                         }
                     }
                 }
-            }
+            }	
 # Envoi notif Discord
 			Send "up" "1"
 		}
     }
 
-	
-# Test Ne Répond Pas et recheck après 30s et reboot
-    if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
-		Start-Sleep 30
-		if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
-            $ProcessI2.Kill()
-            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
-            Facts "HangI2"
-            Send "evt" "2"
-            Start-Sleep 60
-# Test disponibilité PG après reboot
-            $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-            if ($connectionI2.tcpTestSucceeded -eq "True") 
-            {
-				$case = 2
-                Facts "online"
-                $case = $null
-            }
-            else {
-                $Co = 0
-                $tent = 0
-                While($Co -eq 0)
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+# Test Ne Répond Pas INSTANCE2 et recheck après 30s et reboot
+        if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
+    		Start-Sleep 30
+		    if( -not($ProcessI2.MainWindowHandle -and $ProcessI2.Responding)) {
+                $ProcessI2.Kill()
+                Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w PG"" -WorkingDirectory $DCSPath"
+                Facts "HangI2"
+                Send "evt" "2"
+                Start-Sleep 60
+# Test disponibilité INSTANCE2 après reboot
+                $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+                if ($connectionI2.tcpTestSucceeded -eq "True") 
                 {
-                    if($tent -eq 10) {
-                        $sI2 = 1
-                        Facts "long"
-                        $sI2 = $null
-                        break
-                    }
-                    else {
-                        $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-                        if ($connectionI2.tcpTestSucceeded -eq "True") {
-                            $Co = 1
-                            $case = 2
-                            Facts "online"
-                            $case = $null
+    				$case = 2
+                    Facts "online"
+                    $case = $null
+                }
+                else {
+                    $Co = 0
+                    $tent = 0
+                    While($Co -eq 0)
+                    {
+                        if($tent -eq 10) {
+                            $sI2 = 1
+                            Facts "long"
+                            $sI2 = $null
+                            break
                         }
                         else {
-                            Start-Sleep 5
-                            $Co = 0
-                            $tent++
+                            $connectionI2 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+                            if ($connectionI2.tcpTestSucceeded -eq "True") {
+                                $Co = 1
+                                $case = 2
+                                Facts "online"
+                                $case = $null
+                            }
+                            else {
+                                Start-Sleep 5
+                                $Co = 0
+                                $tent++
+                            }
                         }
                     }
                 }
-            }
 # Envoi notif Discord
-        Send "up" "1"
-		}
-	}
+            Send "up" "1"
+		    }
+	    }
+    }
 
-# Test Ne Répond Pas, recheck après 30s et reboot
-    if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
-		Start-Sleep 30
-		if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
-            $ProcessI3.Kill()
-            Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
-            Facts "HangI3"
-            Send "evt" "2"
-            Start-Sleep 60
-# Test disponibilité WWII après reboot
-            $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
-            if ($connectionI3.tcpTestSucceeded -eq "True") {
-				$case = 3
-                Facts "online"
-                $case = $null
-            } else {
-                $Co = 0
-                $tent = 0
-                While($Co -eq 0)
-                {
-                    if($tent -eq 10) {
-                        $sI3 = 1
-                        Facts "long"
-                        $sI3 = $null
-                        break
-                    }
-                    else {
-                        $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
-                        if ($connectionI3.tcpTestSucceeded -eq "True") {
-                            $Co = 1
-                            $case = 3
-                            Facts "online"
-                            $case = $null
+    if($instances -eq '3')
+    {
+# Test Ne Répond Pas INSTANCE3 recheck après 30s et reboot
+        if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
+    		Start-Sleep 30
+		    if( -not($ProcessI3.MainWindowHandle -and $ProcessI3.Responding)) {
+                $ProcessI3.Kill()
+                Invoke-Expression "Start-Process -FilePath $DCSExePath -ArgumentList ""--server --norender -w wwii"" -WorkingDirectory $DCSPath"
+                Facts "HangI3"
+                Send "evt" "2"
+                Start-Sleep 60
+# Test disponibilité INSTANCE3 après reboot
+                $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI2
+                if ($connectionI3.tcpTestSucceeded -eq "True") {
+    				$case = 3
+                    Facts "online"
+                    $case = $null
+                } else {
+                    $Co = 0
+                    $tent = 0
+                    While($Co -eq 0)
+                    {
+                        if($tent -eq 10) {
+                            $sI3 = 1
+                            Facts "long"
+                            $sI3 = $null
+                            break
                         }
                         else {
-                            Start-Sleep 5
-                            $Co = 0
-                            $tent++
+                            $connectionI3 = Test-NetConnection -ComputerName $ipserver -Port $portI3
+                            if ($connectionI3.tcpTestSucceeded -eq "True") {
+                                $Co = 1
+                                $case = 3
+                                Facts "online"
+                                $case = $null
+                            }
+                            else {
+                                Start-Sleep 5
+                                $Co = 0
+                                $tent++
+                            }
                         }
                     }
                 }
-            }
 # Envoi notif Discord
-        Send "up" "1"
-		}
-	}
+            Send "up" "1"
+		    }
+        }
+    }
 
 # Détéction changement de mission
     $getI1 = Invoke-Expression "(Get-Content $Json1 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-    $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
-    $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
     $MissionI1comp = $getI1.mission.name
-    $MissionI2comp = $getI2.mission.name
-    $MissionI3comp = $getI3.mission.name
+    if($instances -eq '2' -or $instances -eq '3')
+    {
+        $getI2 = Invoke-Expression "(Get-Content $Json2 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+        $MissionI2comp = $getI2.mission.name
+    }
+    if($instances -eq '3')
+    {
+        $getI3 = Invoke-Expression "(Get-Content $Json3 -Raw -Encoding UTF8 | ConvertFrom-Json).2"
+        $MissionI3comp = $getI3.mission.name
+    }
+# Pas de check à la première ittération
     if(!($itt -eq 0))
     {
         if(!($MissionI1comp -eq $MissionI1))
@@ -603,22 +660,28 @@ while(1) {
             Send "inf" "1"
             $MissionI1 = $MissionI1comp
         }
-        if(!($MissionI2comp -eq $MissionI2))
+        if($instances -eq '2' -or $instances -eq '3')
         {
-            Facts "ChangeI2"
-            Send "inf" "1"
-            $MissionI2 = $MissionI2comp
+            if(!($MissionI2comp -eq $MissionI2))
+            {
+                Facts "ChangeI2"
+                Send "inf" "1"
+                $MissionI2 = $MissionI2comp
+            }
         }
-        if(!($MissionI3comp -eq $MissionI3))
+        if($instances -eq '3')
         {
-            Facts "ChangeI3"
-            Send "inf" "1"
-            $MissionI3 = $MissionI3comp
+            if(!($MissionI3comp -eq $MissionI3))
+            {
+                Facts "ChangeI3"
+                Send "inf" "1"
+                $MissionI3 = $MissionI3comp
+            }
         }
     } else {
         $MissionI1 = $MissionI1comp
-        $MissionI2 = $MissionI2comp
-        $MissionI3 = $MissionI3comp
+        if($instances -eq '2' -or $instances -eq '3') { $MissionI2 = $MissionI2comp }
+        if($instances -eq '3') { $MissionI3 = $MissionI3comp }
     }
 
 # TEMPORISATION BOUCLE

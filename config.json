@@ -3,6 +3,7 @@
         "_comment":"debug : if -eq 1 only send to UriDebug ---- startup : if -eq 1, send notification on first startup (no DCS.exe running)",
         "debug":0,
         "startup":0,
+        "instances":3,
         "startupI1": "New-DiscordFact -Name 'CAUCASE' -Value 'Demarrage' -Inline $false",
         "startupI2": "New-DiscordFact -Name 'PG' -Value 'Demarrage' -Inline $false",
         "startupI3": "New-DiscordFact -Name 'WWII' -Value 'Demarrage' -Inline $false",
