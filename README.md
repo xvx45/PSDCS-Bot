@@ -34,9 +34,9 @@ Un crash ou un Hang amène au redémarrage de l'instance concernée.
 
 
 ## Prérequis : 
-* Powershell 5
+* Powershell 5.1
 * Module PSDiscord (https://github.com/EvotecIT/PSDiscord)
-* Perun for DCS World (https://github.com/szporwolik/perun) ou sa version moddée disponible dans le Folder DCS si vous n'utilisez pas cette solution. 
+* Perun for DCS World (https://github.com/szporwolik/perun) ou sa version modifiée par mes soins disponible dans le Folder DCS si vous n'utilisez pas cette solution. 
 
 
 ## Mise en place :
