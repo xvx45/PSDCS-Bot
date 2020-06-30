@@ -26,4 +26,4 @@ Après avoir remplis tous les pré-requis
 
 
 ## Remarques :
-Uniquement testé et utilisé sous Windows Server 2012 Std
+Uniquement testé et utilisé sous Windows Server 2012 Std et Windows Server 2019 Std
