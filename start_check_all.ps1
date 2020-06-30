@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Supervision, notifications et actions sur instances DCS World
 .NOTES
@@ -156,7 +156,8 @@ Function Send($title, $nFacts)
             $color = "Orange"
 		}
 		"up" {
-			$Se = "Informations"
+            $ver = (Get-Command "C:\Program Files\Eagle Dynamics\DCS World OpenBeta Server\bin\dcs.exe").FileVersionInfo.FileVersion
+			$Se = "Informations - serveur version $ver"
             $color = "Green"
 		}
 		"inf" {
